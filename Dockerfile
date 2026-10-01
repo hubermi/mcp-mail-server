@@ -1,33 +1,26 @@
 # syntax=docker/dockerfile:1
 
-ARG NODE_VERSION=22.23.0
+# Runs the published npm package exactly like the documented MCP client setup:
+#   npx -y mcp-mail-server
+# Requires Node.js 22.13.0 or newer.
+FROM node:22-alpine
 
-# ---- Build stage: compile the single-file bundle ----
-FROM node:${NODE_VERSION}-alpine AS build
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
-
-COPY . .
-RUN npm run build
-
-# ---- Runtime stage: production dependencies + bundle only ----
-FROM node:${NODE_VERSION}-alpine AS runtime
-WORKDIR /app
+# Version of the mcp-mail-server npm package to bake into the image.
+ARG MCP_MAIL_SERVER_VERSION=latest
 
 ENV NODE_ENV=production
 
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-
-COPY --from=build /app/dist/index.js ./dist/index.js
+# Pre-install the package so `npx -y mcp-mail-server` starts instantly and
+# works without network access to the npm registry at runtime.
+RUN npm install -g "mcp-mail-server@${MCP_MAIL_SERVER_VERSION}" \
+  && npm cache clean --force
 
 # Default location for attachment downloads/uploads; mount a volume here and
 # set MAIL_ALLOWED_ROOTS=/data to enable local attachment access.
 RUN mkdir -p /data && chown node:node /data
 
 USER node
+WORKDIR /home/node
 
 # The MCP server speaks JSON-RPC over stdio, so run the container with `-i`.
-ENTRYPOINT ["node", "dist/index.js"]
+ENTRYPOINT ["npx", "-y", "mcp-mail-server"]

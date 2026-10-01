@@ -281,6 +281,37 @@ After SMTP accepts a message, sending tools report `sentFolderSaved` and the det
 
 </details>
 
+## Docker
+
+The Docker image runs the published npm package the same way as the client examples above (`npx -y mcp-mail-server` on Node.js 22). The package is pre-installed at build time, so the container needs no npm registry access at runtime.
+
+```bash
+docker build -t mcp-mail-server .                                   # latest npm release
+docker build --build-arg MCP_MAIL_SERVER_VERSION=2.1.0 -t mcp-mail-server .  # pinned release
+```
+
+The server talks over stdio, so the MCP client must start the container with `-i`. Put your credentials in a `.env` file (see [`.env.example`](.env.example)) and reference it from your client configuration:
+
+```json
+{
+  "mcpServers": {
+    "mcp-mail-server": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--env-file",
+        "/absolute/path/to/.env",
+        "ghcr.io/hubermi/mcp-mail-server:latest"
+      ]
+    }
+  }
+}
+```
+
+A [`docker-compose.yml`](docker-compose.yml) example is included as well; MCP clients can launch it with `docker compose -f /absolute/path/to/docker-compose.yml run --rm -T mcp-mail-server`. It mounts a `/data` volume and sets `MAIL_ALLOWED_ROOTS=/data` for attachment downloads and uploads.
+
 ## Configuration
 
 ### Environment Variables
