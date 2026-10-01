@@ -15,6 +15,7 @@ coverage
 *.local
 .env
 .env.*
+.mcp.env
 !.env.example
 /cypress/videos/
 /cypress/screenshots/

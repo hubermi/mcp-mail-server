@@ -1,8 +1,23 @@
-mcp-mail-server:
-      image: hubermi/mcp-mail:latest
-      env_file: .mcp.env
-      environment:
-        # Allow attachment downloads/uploads inside the mounted /data volume.
-        MAIL_ALLOWED_ROOTS: /data
-      volumes:
-        - ./mcp-mail-data:/data
+# Example Docker Compose setup for mcp-mail-server.
+#
+# The server communicates over stdio, so an MCP client has to attach to the
+# container's stdin/stdout, e.g.:
+#
+#   docker compose -f /absolute/path/to/docker-compose.yml run --rm -T mcp-mail-server
+#
+# Credentials are read from .mcp.env (copy .env.example and fill it in).
+# The container runs as the unprivileged `node` user (UID 1000), so create the
+# attachment folder with matching ownership before the first start:
+#
+#   mkdir -p mcp-mail-data && sudo chown 1000:1000 mcp-mail-data
+services:
+  mcp-mail-server:
+    image: ghcr.io/hubermi/mcp-mail-server:latest
+    stdin_open: true
+    init: true
+    env_file: .mcp.env
+    environment:
+      # Allow attachment downloads/uploads inside the mounted /data volume.
+      MAIL_ALLOWED_ROOTS: /data
+    volumes:
+      - ./mcp-mail-data:/data

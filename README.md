@@ -310,7 +310,7 @@ The server talks over stdio, so the MCP client must start the container with `-i
 }
 ```
 
-A [`docker-compose.yml`](docker-compose.yml) example is included as well; MCP clients can launch it with `docker compose -f /absolute/path/to/docker-compose.yml run --rm -T mcp-mail-server`. It mounts a `/data` volume and sets `MAIL_ALLOWED_ROOTS=/data` for attachment downloads and uploads.
+A [`docker-compose.yml`](docker-compose.yml) example is included as well; MCP clients can launch it with `docker compose -f /absolute/path/to/docker-compose.yml run --rm -T mcp-mail-server`. It reads credentials from `.mcp.env`, mounts `./mcp-mail-data` at `/data` and sets `MAIL_ALLOWED_ROOTS=/data` for attachment downloads and uploads. The container runs as UID 1000, so create that folder with `mkdir -p mcp-mail-data && sudo chown 1000:1000 mcp-mail-data` first.
 
 ## Configuration
 
