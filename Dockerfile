@@ -8,7 +8,8 @@ FROM node:22-alpine
 # Version of the mcp-mail-server npm package to bake into the image.
 ARG MCP_MAIL_SERVER_VERSION=latest
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+  NPM_CONFIG_UPDATE_NOTIFIER=false
 
 # Pre-install the package so `npx -y mcp-mail-server` starts instantly and
 # works without network access to the npm registry at runtime.
@@ -19,8 +20,12 @@ RUN npm install -g "mcp-mail-server@${MCP_MAIL_SERVER_VERSION}" \
 # set MAIL_ALLOWED_ROOTS=/data to enable local attachment access.
 RUN mkdir -p /data && chown node:node /data
 
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
 USER node
 WORKDIR /home/node
 
 # The MCP server speaks JSON-RPC over stdio, so run the container with `-i`.
-ENTRYPOINT ["npx", "-y", "mcp-mail-server"]
+# docker-entrypoint.sh validates the configuration, then runs
+# `npx -y mcp-mail-server`.
+ENTRYPOINT ["docker-entrypoint.sh"]
