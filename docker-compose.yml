@@ -7,9 +7,10 @@
 #
 #   docker compose up -d
 #
-# The port is published on 127.0.0.1 only: the endpoint has NO authentication
-# and gives full access to the mailbox. Only expose it beyond localhost behind
-# a reverse proxy that adds authentication/TLS, or on a trusted network.
+# Set MCP_AUTH_TOKEN in .mcp.env (e.g. `openssl rand -hex 32`); clients must
+# then send `Authorization: Bearer <token>`. Without it the endpoint accepts
+# unauthenticated requests and gives full access to the mailbox. The port is
+# published on 127.0.0.1 only; expose it beyond localhost only behind TLS.
 #
 # Credentials are read from .mcp.env (copy .env.example and fill it in).
 # The container runs as the unprivileged `node` user (UID 1000), so create the

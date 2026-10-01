@@ -25,24 +25,30 @@ case "$transport" in
     ;;
   streamableHttp)
     # Stateful: one mail-server process (and IMAP connection) per MCP session.
-    exec supergateway \
-      --stdio "npx -y mcp-mail-server" \
-      --outputTransport streamableHttp \
-      --stateful \
-      --port "$port" \
-      --healthEndpoint /healthz \
-      "$@"
+    set -- --outputTransport streamableHttp --stateful "$@"
     ;;
   sse)
-    exec supergateway \
-      --stdio "npx -y mcp-mail-server" \
-      --outputTransport sse \
-      --port "$port" \
-      --healthEndpoint /healthz \
-      "$@"
+    set -- --outputTransport sse "$@"
     ;;
   *)
     echo "mcp-mail-server: unsupported MCP_TRANSPORT '$transport' (use stdio, streamableHttp or sse)" >&2
     exit 1
     ;;
 esac
+
+if [ -n "${MCP_AUTH_TOKEN:-}" ]; then
+  # supergateway listens internally; the auth proxy owns the public port and
+  # only forwards requests carrying `Authorization: Bearer $MCP_AUTH_TOKEN`.
+  internal_port="${MCP_INTERNAL_PORT:-8001}"
+  if [ "$internal_port" = "$port" ]; then
+    echo "mcp-mail-server: MCP_INTERNAL_PORT must differ from MCP_PORT" >&2
+    exit 1
+  fi
+  exec node /usr/local/lib/mcp-mail-server-docker/auth-proxy.mjs \
+    supergateway --stdio "npx -y mcp-mail-server" \
+    --port "$internal_port" --healthEndpoint /healthz "$@"
+fi
+
+echo "mcp-mail-server: WARNING: MCP_AUTH_TOKEN is not set, the $transport endpoint accepts unauthenticated requests" >&2
+exec supergateway --stdio "npx -y mcp-mail-server" \
+  --port "$port" --healthEndpoint /healthz "$@"

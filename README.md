@@ -300,8 +300,10 @@ The container supports three transports, selected with `MCP_TRANSPORT`:
 
 `MCP_PORT` defaults to `8000`. In HTTP and SSE mode, [supergateway](https://github.com/supercorp-ai/supergateway) bridges the stdio server and `GET /healthz` returns `ok`.
 
+Set `MCP_AUTH_TOKEN` to require `Authorization: Bearer <token>` on every request except `/healthz`; requests without the right token get `401 Unauthorized`. Generate a token with `openssl rand -hex 32`.
+
 > [!WARNING]
-> The HTTP and SSE endpoints have no authentication and give full access to the mailbox. Publish the port on `127.0.0.1` only, or put an authenticating reverse proxy with TLS in front of it.
+> Without `MCP_AUTH_TOKEN` the HTTP and SSE endpoints accept unauthenticated requests and give full access to the mailbox. Always set a token, and use TLS (for example a reverse proxy) when the port is reachable from other machines, because the token is sent with every request.
 
 Put your credentials in an env file (see [`.env.example`](.env.example)).
 
@@ -319,7 +321,10 @@ Then point your MCP client at the URL, for example:
   "mcpServers": {
     "mcp-mail-server": {
       "type": "http",
-      "url": "http://localhost:8000/mcp"
+      "url": "http://localhost:8000/mcp",
+      "headers": {
+        "Authorization": "Bearer <MCP_AUTH_TOKEN>"
+      }
     }
   }
 }

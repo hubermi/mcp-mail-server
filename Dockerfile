@@ -8,7 +8,8 @@
 #   stdio          (default) talk JSON-RPC over stdin/stdout; run with `-i`
 #   streamableHttp serve MCP over HTTP at http://<host>:${MCP_PORT}/mcp
 #   sse            serve MCP over SSE at http://<host>:${MCP_PORT}/sse
-# HTTP/SSE use supergateway to bridge the stdio server.
+# HTTP/SSE use supergateway to bridge the stdio server. Set MCP_AUTH_TOKEN to
+# require `Authorization: Bearer <token>` on every request except /healthz.
 FROM node:22-alpine
 
 # Version of the mcp-mail-server npm package to bake into the image.
@@ -33,6 +34,7 @@ RUN npm install -g \
 RUN mkdir -p /data && chown node:node /data
 
 COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY docker-auth-proxy.mjs /usr/local/lib/mcp-mail-server-docker/auth-proxy.mjs
 
 USER node
 WORKDIR /home/node
