@@ -290,7 +290,42 @@ docker build -t mcp-mail-server .                                   # latest npm
 docker build --build-arg MCP_MAIL_SERVER_VERSION=2.1.0 -t mcp-mail-server .  # pinned release
 ```
 
-The server talks over stdio, so the MCP client must start the container with `-i`. Put your credentials in a `.env` file (see [`.env.example`](.env.example)) and reference it from your client configuration:
+The container supports three transports, selected with `MCP_TRANSPORT`:
+
+| `MCP_TRANSPORT`   | Endpoint                        | Notes                                                    |
+| ----------------- | ------------------------------- | -------------------------------------------------------- |
+| `stdio` (default) | stdin/stdout                    | The MCP client starts the container with `docker run -i` |
+| `streamableHttp`  | `http://<host>:${MCP_PORT}/mcp` | Long-running service; one mail session per MCP session   |
+| `sse`             | `http://<host>:${MCP_PORT}/sse` | For clients that only support the legacy SSE transport   |
+
+`MCP_PORT` defaults to `8000`. In HTTP and SSE mode, [supergateway](https://github.com/supercorp-ai/supergateway) bridges the stdio server and `GET /healthz` returns `ok`.
+
+> [!WARNING]
+> The HTTP and SSE endpoints have no authentication and give full access to the mailbox. Publish the port on `127.0.0.1` only, or put an authenticating reverse proxy with TLS in front of it.
+
+Put your credentials in an env file (see [`.env.example`](.env.example)).
+
+**As a network service** with the included [`docker-compose.yml`](docker-compose.yml), which reads `.mcp.env` and serves Streamable HTTP on `127.0.0.1:8000`:
+
+```bash
+mkdir -p mcp-mail-data && sudo chown 1000:1000 mcp-mail-data  # attachment folder, container runs as UID 1000
+docker compose up -d
+```
+
+Then point your MCP client at the URL, for example:
+
+```json
+{
+  "mcpServers": {
+    "mcp-mail-server": {
+      "type": "http",
+      "url": "http://localhost:8000/mcp"
+    }
+  }
+}
+```
+
+**Over stdio**, letting the MCP client start the container:
 
 ```json
 {
@@ -309,8 +344,6 @@ The server talks over stdio, so the MCP client must start the container with `-i
   }
 }
 ```
-
-A [`docker-compose.yml`](docker-compose.yml) example is included as well; MCP clients can launch it with `docker compose -f /absolute/path/to/docker-compose.yml run --rm -T mcp-mail-server`. It reads credentials from `.mcp.env`, mounts `./mcp-mail-data` at `/data` and sets `MAIL_ALLOWED_ROOTS=/data` for attachment downloads and uploads. The container runs as UID 1000, so create that folder with `mkdir -p mcp-mail-data && sudo chown 1000:1000 mcp-mail-data` first.
 
 ## Configuration
 

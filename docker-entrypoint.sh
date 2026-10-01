@@ -1,6 +1,7 @@
 #!/bin/sh
 # Fail fast with a readable message instead of Node's minified stack trace
-# when required configuration is missing.
+# when required configuration is missing, then start the server on the
+# transport selected by MCP_TRANSPORT.
 set -e
 
 missing=""
@@ -15,4 +16,33 @@ if [ -n "$missing" ]; then
   exit 1
 fi
 
-exec npx -y mcp-mail-server "$@"
+transport="${MCP_TRANSPORT:-stdio}"
+port="${MCP_PORT:-8000}"
+
+case "$transport" in
+  stdio)
+    exec npx -y mcp-mail-server "$@"
+    ;;
+  streamableHttp)
+    # Stateful: one mail-server process (and IMAP connection) per MCP session.
+    exec supergateway \
+      --stdio "npx -y mcp-mail-server" \
+      --outputTransport streamableHttp \
+      --stateful \
+      --port "$port" \
+      --healthEndpoint /healthz \
+      "$@"
+    ;;
+  sse)
+    exec supergateway \
+      --stdio "npx -y mcp-mail-server" \
+      --outputTransport sse \
+      --port "$port" \
+      --healthEndpoint /healthz \
+      "$@"
+    ;;
+  *)
+    echo "mcp-mail-server: unsupported MCP_TRANSPORT '$transport' (use stdio, streamableHttp or sse)" >&2
+    exit 1
+    ;;
+esac
