@@ -1,7 +1,8 @@
 # Example Docker Compose setup for mcp-mail-server.
 #
-# The server communicates over stdio, so an MCP client has to attach to the
-# container's stdin/stdout, e.g.:
+# The image runs `npx -y mcp-mail-server` (the published npm package) on
+# Node.js 22. The server communicates over stdio, so an MCP client has to
+# attach to the container's stdin/stdout, e.g.:
 #
 #   docker compose run --rm -T mcp-mail-server
 #
@@ -9,7 +10,11 @@
 services:
   mcp-mail-server:
     image: ${MCP_MAIL_SERVER_IMAGE:-ghcr.io/hubermi/mcp-mail-server:latest}
-    build: .
+    build:
+      context: .
+      args:
+        # npm version of mcp-mail-server to install, e.g. 2.1.0
+        MCP_MAIL_SERVER_VERSION: latest
     stdin_open: true
     init: true
     restart: 'no'
